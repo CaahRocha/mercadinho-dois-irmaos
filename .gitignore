@@ -38,3 +38,6 @@ Thumbs.db
 # Arquivos temporários do projeto
 backend/check-users.js
 exclude.txt
+
+dist-electron/
+dist-electron/

@@ -2,44 +2,79 @@ const { app, BrowserWindow, Menu } = require('electron');
 const path = require('path');
 const { fork } = require('child_process');
 const fs = require('fs');
+const http = require('http');
 
-// Manter referência global da janela
 let mainWindow;
 let serverProcess;
-
-// Verificar se está em desenvolvimento
 const isDev = !app.isPackaged;
 
-// Obter o caminho correto do app (funciona empacotado ou não)
 function getAppPath() {
   if (isDev) {
     return path.join(__dirname, '..');
   }
-  // Em produção, o app está em resources/app
   return path.join(process.resourcesPath, 'app');
 }
 
-// Obter caminho para dados do usuário (onde fica o banco de dados)
-function getUserDataPath() {
-  return path.join(app.getPath('userData'), 'data');
-}
-
-// Garantir que a pasta de dados existe
-function ensureDataFolder() {
-  const dataPath = getUserDataPath();
+function getDataPath() {
+  const dataPath = path.join(app.getPath('userData'), 'data');
   if (!fs.existsSync(dataPath)) {
     fs.mkdirSync(dataPath, { recursive: true });
   }
   return dataPath;
 }
 
+function waitForServer(maxAttempts = 60) {
+  return new Promise((resolve, reject) => {
+    let attempts = 0;
+    const check = () => {
+      attempts++;
+      http.get('http://127.0.0.1:3001/api/health', (res) => {
+        resolve();
+      }).on('error', () => {
+        if (attempts >= maxAttempts) {
+          reject(new Error('Servidor não iniciou'));
+        } else {
+          setTimeout(check, 300);
+        }
+      });
+    };
+    check();
+  });
+}
+
+function startServer() {
+  if (isDev) return Promise.resolve();
+
+  return new Promise((resolve, reject) => {
+    const appPath = getAppPath();
+    const dataPath = getDataPath();
+    const serverPath = path.join(appPath, 'backend', 'src', 'server.js');
+
+    serverProcess = fork(serverPath, [], {
+      env: {
+        ...process.env,
+        NODE_ENV: 'production',
+        PORT: '3001',
+        DATABASE_PATH: path.join(dataPath, 'mercado.db')
+      },
+      cwd: path.join(appPath, 'backend'),
+      silent: true
+    });
+
+    serverProcess.on('error', reject);
+    
+    waitForServer().then(resolve).catch(reject);
+  });
+}
+
 function createWindow() {
+  const appPath = getAppPath();
+  
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
     minWidth: 1024,
     minHeight: 700,
-    icon: null, // Será adicionado depois
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -49,22 +84,23 @@ function createWindow() {
     title: 'Mercadinho Dois Irmãos'
   });
 
-  // Remover menu em produção
   if (!isDev) {
     Menu.setApplicationMenu(null);
   }
 
-  // Carregar a aplicação
   if (isDev) {
-    // Em desenvolvimento, conecta ao servidor Vite
     mainWindow.loadURL('http://localhost:5173');
-    mainWindow.webContents.openDevTools();
-  } else {
-    // Em produção, carrega via servidor backend
-    mainWindow.loadURL('http://localhost:3001');
+  }
+  
+  // Sempre abre DevTools pra debug
+  mainWindow.webContents.openDevTools();
+  
+  if (!isDev) {
+    // Carrega o arquivo HTML direto
+    const indexPath = path.join(appPath, 'frontend', 'dist', 'index.html');
+    mainWindow.loadFile(indexPath);
   }
 
-  // Mostrar janela quando estiver pronta
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
   });
@@ -74,60 +110,14 @@ function createWindow() {
   });
 }
 
-function startServer() {
-  if (isDev) {
-    // Em desenvolvimento, o servidor é iniciado separadamente
-    return Promise.resolve();
-  }
-
-  return new Promise((resolve, reject) => {
-    const appPath = getAppPath();
-    const dataPath = ensureDataFolder();
-    const serverPath = path.join(appPath, 'backend', 'src', 'server.js');
-    
-    console.log('Iniciando servidor...');
-    console.log('App path:', appPath);
-    console.log('Data path:', dataPath);
-    console.log('Server path:', serverPath);
-
-    // Usar fork para rodar o servidor (não precisa de node externo)
-    serverProcess = fork(serverPath, [], {
-      env: {
-        ...process.env,
-        NODE_ENV: 'production',
-        PORT: '3001',
-        DATABASE_PATH: path.join(dataPath, 'mercado.db')
-      },
-      cwd: path.join(appPath, 'backend'),
-      silent: false
-    });
-
-    serverProcess.on('message', (msg) => {
-      console.log('Server message:', msg);
-      if (msg === 'ready') {
-        resolve();
-      }
-    });
-
-    serverProcess.on('error', (err) => {
-      console.error('Erro ao iniciar servidor:', err);
-      reject(err);
-    });
-
-    // Dar tempo para o servidor iniciar
-    setTimeout(resolve, 3000);
-  });
-}
-
-// Inicialização
 app.whenReady().then(async () => {
   try {
     await startServer();
-    createWindow();
   } catch (err) {
-    console.error('Erro na inicialização:', err);
-    createWindow(); // Tentar abrir a janela mesmo assim
+    console.error('Erro ao iniciar servidor:', err);
   }
+  
+  createWindow();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -136,19 +126,13 @@ app.whenReady().then(async () => {
   });
 });
 
-// Fechar a aplicação quando todas as janelas forem fechadas (exceto no macOS)
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
-    if (serverProcess) {
-      serverProcess.kill();
-    }
+    if (serverProcess) serverProcess.kill();
     app.quit();
   }
 });
 
-// Limpar o processo do servidor ao sair
 app.on('before-quit', () => {
-  if (serverProcess) {
-    serverProcess.kill();
-  }
+  if (serverProcess) serverProcess.kill();
 });

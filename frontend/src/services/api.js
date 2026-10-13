@@ -1,7 +1,11 @@
 import axios from 'axios';
 
+// Detecta se está rodando no Electron (file://) ou navegador normal
+const isElectron = window.location.protocol === 'file:';
+const baseURL = isElectron ? 'http://localhost:3001/api' : '/api';
+
 const api = axios.create({
-  baseURL: '/api',
+  baseURL,
   headers: {
     'Content-Type': 'application/json'
   }
