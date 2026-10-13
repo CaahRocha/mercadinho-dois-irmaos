@@ -1,0 +1,8 @@
+{
+  "name": "mercadinho-dois-irmaos",
+  "version": "1.0.0",
+  "description": "Sistema Mercadinho Dois Irmãos - PDV, Fiado, PIX e muito mais",
+  "main": "electron/main.js",
+  "author": "Mercadinho Dois Irmãos",
+  "license": "ISC"
+}

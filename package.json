@@ -1,7 +1,7 @@
 {
-  "name": "sistema-mercado",
+  "name": "mercadinho-dois-irmaos",
   "version": "1.0.0",
-  "description": "Sistema de controle para mercado - PDV, caixas, produtos e vendas",
+  "description": "Sistema Mercadinho Dois Irmãos - PDV, Fiado, PIX e muito mais",
   "main": "electron/main.js",
   "scripts": {
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
@@ -9,17 +9,21 @@
     "dev:frontend": "cd frontend && npm run dev",
     "build": "npm run build:frontend && npm run build:electron",
     "build:frontend": "cd frontend && npm run build",
-    "build:electron": "electron-builder",
+    "build:electron": "electron-builder --win",
     "start": "electron .",
-    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install"
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "add-users": "cd backend && npm run add-users",
+    "seed": "cd backend && npm run seed"
   },
   "keywords": [
     "pdv",
     "mercado",
     "vendas",
-    "caixa"
+    "caixa",
+    "fiado",
+    "pix"
   ],
-  "author": "",
+  "author": "Mercadinho Dois Irmãos",
   "license": "ISC",
   "devDependencies": {
     "concurrently": "^8.2.2",
@@ -27,27 +31,34 @@
     "electron-builder": "^24.9.1"
   },
   "build": {
-    "appId": "com.sistemamercado.app",
-    "productName": "Sistema Mercado",
+    "appId": "com.mercadinho.doisirmaos",
+    "productName": "Mercadinho Dois Irmãos",
     "directories": {
-      "output": "dist"
+      "output": "dist-electron"
     },
     "files": [
       "electron/**/*",
       "backend/**/*",
       "frontend/dist/**/*",
-      "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
+      "!backend/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
       "!**/node_modules/.cache"
     ],
+    "extraResources": [
+      {
+        "from": "backend/node_modules",
+        "to": "backend/node_modules",
+        "filter": ["**/*"]
+      }
+    ],
+    "asar": false,
     "win": {
-      "target": "nsis",
-      "icon": "assets/icon.ico"
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
+      "target": [
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "signAndEditExecutable": false
     }
   }
 }

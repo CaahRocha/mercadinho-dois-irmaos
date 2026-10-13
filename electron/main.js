@@ -1,6 +1,7 @@
 const { app, BrowserWindow, Menu } = require('electron');
 const path = require('path');
-const { spawn } = require('child_process');
+const { fork } = require('child_process');
+const fs = require('fs');
 
 // Manter referência global da janela
 let mainWindow;
@@ -9,19 +10,43 @@ let serverProcess;
 // Verificar se está em desenvolvimento
 const isDev = !app.isPackaged;
 
+// Obter o caminho correto do app (funciona empacotado ou não)
+function getAppPath() {
+  if (isDev) {
+    return path.join(__dirname, '..');
+  }
+  // Em produção, o app está em resources/app
+  return path.join(process.resourcesPath, 'app');
+}
+
+// Obter caminho para dados do usuário (onde fica o banco de dados)
+function getUserDataPath() {
+  return path.join(app.getPath('userData'), 'data');
+}
+
+// Garantir que a pasta de dados existe
+function ensureDataFolder() {
+  const dataPath = getUserDataPath();
+  if (!fs.existsSync(dataPath)) {
+    fs.mkdirSync(dataPath, { recursive: true });
+  }
+  return dataPath;
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
     minWidth: 1024,
     minHeight: 700,
-    icon: path.join(__dirname, '../assets/icon.png'),
+    icon: null, // Será adicionado depois
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.js')
     },
-    show: false
+    show: false,
+    title: 'Mercadinho Dois Irmãos'
   });
 
   // Remover menu em produção
@@ -35,8 +60,8 @@ function createWindow() {
     mainWindow.loadURL('http://localhost:5173');
     mainWindow.webContents.openDevTools();
   } else {
-    // Em produção, carrega os arquivos buildados
-    mainWindow.loadFile(path.join(__dirname, '../frontend/dist/index.html'));
+    // Em produção, carrega via servidor backend
+    mainWindow.loadURL('http://localhost:3001');
   }
 
   // Mostrar janela quando estiver pronta
@@ -52,35 +77,57 @@ function createWindow() {
 function startServer() {
   if (isDev) {
     // Em desenvolvimento, o servidor é iniciado separadamente
-    return;
+    return Promise.resolve();
   }
 
-  // Em produção, inicia o servidor backend
-  const serverPath = path.join(__dirname, '../backend/src/server.js');
-  
-  serverProcess = spawn('node', [serverPath], {
-    env: {
-      ...process.env,
-      NODE_ENV: 'production',
-      PORT: '3001'
-    }
-  });
+  return new Promise((resolve, reject) => {
+    const appPath = getAppPath();
+    const dataPath = ensureDataFolder();
+    const serverPath = path.join(appPath, 'backend', 'src', 'server.js');
+    
+    console.log('Iniciando servidor...');
+    console.log('App path:', appPath);
+    console.log('Data path:', dataPath);
+    console.log('Server path:', serverPath);
 
-  serverProcess.stdout.on('data', (data) => {
-    console.log(`Backend: ${data}`);
-  });
+    // Usar fork para rodar o servidor (não precisa de node externo)
+    serverProcess = fork(serverPath, [], {
+      env: {
+        ...process.env,
+        NODE_ENV: 'production',
+        PORT: '3001',
+        DATABASE_PATH: path.join(dataPath, 'mercado.db')
+      },
+      cwd: path.join(appPath, 'backend'),
+      silent: false
+    });
 
-  serverProcess.stderr.on('data', (data) => {
-    console.error(`Backend Error: ${data}`);
+    serverProcess.on('message', (msg) => {
+      console.log('Server message:', msg);
+      if (msg === 'ready') {
+        resolve();
+      }
+    });
+
+    serverProcess.on('error', (err) => {
+      console.error('Erro ao iniciar servidor:', err);
+      reject(err);
+    });
+
+    // Dar tempo para o servidor iniciar
+    setTimeout(resolve, 3000);
   });
 }
 
 // Inicialização
-app.whenReady().then(() => {
-  startServer();
-  
-  // Aguardar um pouco para o servidor iniciar
-  setTimeout(createWindow, isDev ? 0 : 2000);
+app.whenReady().then(async () => {
+  try {
+    await startServer();
+    createWindow();
+  } catch (err) {
+    console.error('Erro na inicialização:', err);
+    createWindow(); // Tentar abrir a janela mesmo assim
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

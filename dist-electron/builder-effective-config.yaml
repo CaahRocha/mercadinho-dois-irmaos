@@ -1,0 +1,25 @@
+directories:
+  output: dist-electron
+  buildResources: build
+appId: com.mercadinho.doisirmaos
+productName: Mercadinho Dois Irmãos
+files:
+  - filter:
+      - electron/**/*
+      - backend/**/*
+      - frontend/dist/**/*
+      - '!backend/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}'
+      - '!**/node_modules/.cache'
+extraResources:
+  - from: backend/node_modules
+    to: backend/node_modules
+    filter:
+      - '**/*'
+asar: false
+win:
+  target:
+    - target: portable
+      arch:
+        - x64
+  signAndEditExecutable: false
+electronVersion: 28.3.3
