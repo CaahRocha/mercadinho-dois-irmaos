@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Build outputs (mantém frontend/dist para produção)
+# frontend/dist/  <- COMENTADO para incluir o build
+*.exe
+
+# Database (dados locais não vão para o git)
+database/
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Arquivos temporários do projeto
+backend/check-users.js
+exclude.txt

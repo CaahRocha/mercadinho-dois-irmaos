@@ -1,0 +1,122 @@
+.sales-page {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Stats */
+.sales-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.sales-stats .stat-card {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.sales-stats .stat-label {
+  font-size: 0.875rem;
+  color: var(--gray-500);
+}
+
+.sales-stats .stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--gray-800);
+}
+
+/* Filtros */
+.filters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  align-items: end;
+}
+
+.filters-grid .form-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Tabela */
+.cell-datetime {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+
+.cell-datetime span {
+  font-size: 0.75rem;
+}
+
+.row-cancelled {
+  background-color: #fef2f2 !important;
+}
+
+.line-through {
+  text-decoration: line-through;
+}
+
+/* Modal grande */
+.modal-lg {
+  max-width: 700px;
+}
+
+/* Info da venda */
+.sale-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--gray-50);
+  border-radius: var(--radius);
+  margin-bottom: 1rem;
+}
+
+.sale-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.sale-info-item .label {
+  font-size: 0.75rem;
+  color: var(--gray-500);
+  text-transform: uppercase;
+}
+
+.sale-info-item .value {
+  font-weight: 500;
+  color: var(--gray-800);
+}
+
+.cancelled-reason {
+  padding: 0.75rem 1rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: var(--radius);
+  color: #991b1b;
+  margin-bottom: 1rem;
+}
+
+/* Footer tabela */
+.table tfoot td {
+  border-top: 2px solid var(--gray-300);
+  padding-top: 0.75rem;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.mt-4 {
+  margin-top: 1rem;
+}
