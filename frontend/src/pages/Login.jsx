@@ -97,14 +97,6 @@ function Login() {
             )}
           </button>
         </form>
-
-        <div className="login-footer">
-          <p>Usuários de teste:</p>
-          <ul>
-            <li><strong>admin</strong> / admin123</li>
-            <li><strong>caixa1</strong> / caixa123</li>
-          </ul>
-        </div>
       </div>
     </div>
   );
