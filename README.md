@@ -37,13 +37,9 @@ Dê **duplo clique** no arquivo `Iniciar-Sistema.vbs`
 
 O sistema vai abrir automaticamente no Microsoft Edge.
 
-## Usuários padrão
+## Usuários
 
-| Usuário | Senha | Função |
-|---------|-------|--------|
-| ederson | admin123 | Administrador |
-| nathanie | gerente123 | Gerente |
-| caixa | caixa123 | Operador de Caixa |
+Os usuários e senhas são configurados na primeira instalação.
 
 ## Configurar E-mail (Gmail)
 
