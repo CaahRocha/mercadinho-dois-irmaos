@@ -132,3 +132,29 @@
 .login-footer li {
   margin: 0.25rem 0;
 }
+
+.password-toggle {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--gray-400);
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.password-toggle:hover {
+  color: #1e3a5f;
+}
+
+.password-toggle svg {
+  position: static;
+  transform: none;
+  width: 20px;
+  height: 20px;
+}

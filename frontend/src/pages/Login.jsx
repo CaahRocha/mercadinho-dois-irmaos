@@ -2,12 +2,13 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
-import { FiUser, FiLock, FiLogIn, FiShoppingCart } from 'react-icons/fi';
+import { FiUser, FiLock, FiLogIn, FiShoppingCart, FiEye, FiEyeOff } from 'react-icons/fi';
 import './Login.css';
 
 function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -70,12 +71,19 @@ function Login() {
             <div className="input-icon">
               <FiLock />
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 className="form-input"
                 placeholder="Digite sua senha"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
+              <button 
+                type="button" 
+                className="password-toggle"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? <FiEyeOff /> : <FiEye />}
+              </button>
             </div>
           </div>
 
