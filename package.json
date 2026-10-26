@@ -1,64 +1,11 @@
 {
   "name": "mercadinho-dois-irmaos",
   "version": "1.0.0",
-  "description": "Sistema Mercadinho Dois Irmãos - PDV, Fiado, PIX e muito mais",
-  "main": "electron/main.js",
+  "description": "Sistema Mercadinho Dois Irmãos - PDV, Fiado, PIX",
   "scripts": {
-    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "dev:backend": "cd backend && npm run dev",
-    "dev:frontend": "cd frontend && npm run dev",
-    "build": "npm run build:frontend && npm run build:electron",
-    "build:frontend": "cd frontend && npm run build",
-    "build:electron": "electron-builder --win",
-    "start": "electron .",
-    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
-    "add-users": "cd backend && npm run add-users",
-    "seed": "cd backend && npm run seed"
+    "start": "cd backend && node src/server.js",
+    "install:all": "cd backend && npm install && cd ../frontend && npm install && npm run build"
   },
-  "keywords": [
-    "pdv",
-    "mercado",
-    "vendas",
-    "caixa",
-    "fiado",
-    "pix"
-  ],
   "author": "Mercadinho Dois Irmãos",
-  "license": "ISC",
-  "devDependencies": {
-    "concurrently": "^8.2.2",
-    "electron": "^28.1.0",
-    "electron-builder": "^24.9.1"
-  },
-  "build": {
-    "appId": "com.mercadinho.doisirmaos",
-    "productName": "Mercadinho Dois Irmãos",
-    "directories": {
-      "output": "dist-electron"
-    },
-    "files": [
-      "electron/**/*",
-      "backend/**/*",
-      "frontend/dist/**/*",
-      "!backend/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
-      "!**/node_modules/.cache"
-    ],
-    "extraResources": [
-      {
-        "from": "backend/node_modules",
-        "to": "backend/node_modules",
-        "filter": ["**/*"]
-      }
-    ],
-    "asar": false,
-    "win": {
-      "target": [
-        {
-          "target": "portable",
-          "arch": ["x64"]
-        }
-      ],
-      "signAndEditExecutable": false
-    }
-  }
+  "license": "ISC"
 }

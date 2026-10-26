@@ -86,15 +86,6 @@ function Customers() {
         address: customer.address || '',
         neighborhood: customer.neighborhood || '',
         city: customer.city || '',
-        notes: customer.notes || ''
-      });
-    } else {
-      setEditingCustomer(null);
-      setFormData({
-        name: '',
-        phone: '',
-        whatsapp: '',
-        document: '',
         credit_limit: '',
         address: '',
         neighborhood: '',
