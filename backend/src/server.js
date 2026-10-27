@@ -8,7 +8,6 @@ const { dbPromise } = require('./database/connection');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-// Auto-restart trigger
 
 // Middlewares
 app.use(cors());
