@@ -4,9 +4,13 @@
   "description": "Sistema Mercadinho Dois Irmãos - PDV, Fiado, PIX",
   "scripts": {
     "start": "node backend/src/server.js",
-    "build": "npm install --prefix backend && npm install --prefix frontend && npm run build --prefix frontend",
+    "build": "npm install --prefix frontend && npm run build --prefix frontend",
+    "postinstall": "npm install --prefix backend && npm install --prefix frontend",
     "install:all": "cd backend && npm install && cd ../frontend && npm install && npm run build"
   },
   "author": "Mercadinho Dois Irmãos",
-  "license": "ISC"
+  "license": "ISC",
+  "engines": {
+    "node": ">=18.0.0"
+  }
 }
