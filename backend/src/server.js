@@ -1,3 +1,7 @@
+// Adiciona node_modules da raiz ao path
+const rootPath = require('path').join(__dirname, '../..');
+module.paths.unshift(require('path').join(rootPath, 'node_modules'));
+
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
