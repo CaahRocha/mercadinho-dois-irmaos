@@ -267,6 +267,24 @@ function PDV() {
         return;
       }
       
+      // Verificar se código de barras já existe
+      if (quickSaleBarcode.trim()) {
+        try {
+          const checkResponse = await api.get(`/products/barcode/${quickSaleBarcode.trim()}`);
+          if (checkResponse.data) {
+            toast.error(`Código de barras já cadastrado para: ${checkResponse.data.name}`);
+            // Pergunta se quer adicionar ao carrinho
+            if (window.confirm(`Deseja adicionar "${checkResponse.data.name}" ao carrinho?`)) {
+              addToCart(checkResponse.data);
+              setShowQuickSaleModal(false);
+            }
+            return;
+          }
+        } catch (error) {
+          // Se deu 404, significa que não existe - pode cadastrar
+        }
+      }
+      
       try {
         const costPrice = parseQuickSaleInput(quickSaleCostPrice);
         const productData = {
@@ -295,7 +313,8 @@ function PDV() {
         
         loadProducts(); // Recarrega lista de produtos
       } catch (error) {
-        toast.error('Erro ao cadastrar produto');
+        const message = error.response?.data?.message || 'Erro ao cadastrar produto';
+        toast.error(message);
         return;
       }
     } else {
@@ -1058,6 +1077,23 @@ function PDV() {
                       placeholder="Ex: 7891234567890"
                       value={quickSaleBarcode}
                       onChange={(e) => setQuickSaleBarcode(e.target.value)}
+                      onBlur={async (e) => {
+                        const barcode = e.target.value.trim();
+                        if (barcode) {
+                          try {
+                            const response = await api.get(`/products/barcode/${barcode}`);
+                            if (response.data) {
+                              toast.error(`Código já cadastrado: ${response.data.name}`);
+                              if (window.confirm(`Adicionar "${response.data.name}" ao carrinho?`)) {
+                                addToCart(response.data);
+                                setShowQuickSaleModal(false);
+                              }
+                            }
+                          } catch (error) {
+                            // Não existe, pode cadastrar
+                          }
+                        }
+                      }}
                     />
                   </div>
                   
