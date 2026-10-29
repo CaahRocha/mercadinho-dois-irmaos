@@ -84,8 +84,7 @@ function Layout() {
           <div className="user-info">
             <span className="user-name">{user?.name}</span>
             <span className="user-role">
-              {user?.role === 'admin' && 'Ederson'}
-              {user?.role === 'manager' && 'Nathanie ❤️'}
+              {user?.role === 'admin' && 'Administrador'}
               {user?.role === 'cashier' && 'Operador de Caixa'}
             </span>
           </div>

@@ -29,10 +29,9 @@ const seed = async () => {
   console.log('Criando usuários...');
   
   const users = [
-    { name: 'Administrador', username: 'admin', password: 'admin123', role: 'admin' },
-    { name: 'Gerente', username: 'gerente', password: 'gerente123', role: 'manager' },
-    { name: 'Caixa 1', username: 'caixa1', password: 'caixa123', role: 'cashier' },
-    { name: 'Caixa 2', username: 'caixa2', password: 'caixa123', role: 'cashier' },
+    { name: 'Ederson', username: 'ederson', password: 'admin123', role: 'admin' },
+    { name: 'Nathanie ❤️', username: 'nathanie', password: 'gerente123', role: 'admin' },
+    { name: 'Operador de Caixa', username: 'caixa', password: 'caixa123', role: 'cashier' },
   ];
 
   const insertUser = db.prepare(`
@@ -112,10 +111,9 @@ const seed = async () => {
 
   console.log('\n✅ Seed concluído com sucesso!');
   console.log('\nUsuários disponíveis para login:');
-  console.log('  admin    / admin123    (Administrador)');
-  console.log('  gerente  / gerente123  (Gerente)');
-  console.log('  caixa1   / caixa123    (Operador de Caixa)');
-  console.log('  caixa2   / caixa123    (Operador de Caixa)');
+  console.log('  ederson  / admin123    (Admin)');
+  console.log('  nathanie / gerente123  (Admin)');
+  console.log('  caixa    / caixa123    (Operador de Caixa)');
   
   process.exit(0);
 };

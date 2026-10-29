@@ -40,7 +40,7 @@ export function AuthProvider({ children }) {
   };
 
   const isAdmin = user?.role === 'admin';
-  const isManager = user?.role === 'manager' || user?.role === 'admin';
+  const isManager = isAdmin; // Manager agora é o mesmo que Admin
   const isCashier = user?.role === 'cashier';
 
   return (
