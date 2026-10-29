@@ -345,3 +345,31 @@
 .customer-item.disabled {
   cursor: not-allowed !important;
 }
+
+
+/* Botão Venda Avulsa */
+.quick-sale-btn {
+  background: #f59e0b !important;
+  border-color: #f59e0b !important;
+  color: white !important;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+}
+
+.quick-sale-btn:hover {
+  background: #d97706 !important;
+  border-color: #d97706 !important;
+}
+
+.search-section {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.search-section .search-input-wrapper {
+  flex: 1;
+}

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import toast from 'react-hot-toast';
+import { useAuth } from '../context/AuthContext';
 import { 
   FiSearch, 
   FiShoppingCart, 
@@ -10,13 +11,16 @@ import {
   FiTrash2,
   FiCheck,
   FiUser,
-  FiX
+  FiX,
+  FiDollarSign,
+  FiPlusCircle
 } from 'react-icons/fi';
 import { GiWeight } from 'react-icons/gi';
 import './PDV.css';
 
 function PDV() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [products, setProducts] = useState([]);
   const [cart, setCart] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -47,6 +51,14 @@ function PDV() {
   // Estados para Troco (Dinheiro)
   const [showCashModal, setShowCashModal] = useState(false);
   const [cashReceived, setCashReceived] = useState('');
+  
+  // Estados para Venda Avulsa (sem produto cadastrado)
+  const [showQuickSaleModal, setShowQuickSaleModal] = useState(false);
+  const [quickSaleValue, setQuickSaleValue] = useState('');
+  const [quickSaleDescription, setQuickSaleDescription] = useState('');
+  const [quickSaleCostPrice, setQuickSaleCostPrice] = useState('');
+  const [quickSaleBarcode, setQuickSaleBarcode] = useState('');
+  const [wantToRegister, setWantToRegister] = useState(false);
 
   useEffect(() => {
     checkOpenRegister();
@@ -215,6 +227,93 @@ function PDV() {
     setCart([]);
     setSelectedCustomer(null);
     setPaymentMethod('cash');
+  };
+
+  // Função para Venda Avulsa
+  const handleQuickSale = () => {
+    setQuickSaleValue('');
+    setQuickSaleDescription('');
+    setQuickSaleCostPrice('');
+    setQuickSaleBarcode('');
+    setWantToRegister(false);
+    setShowQuickSaleModal(true);
+  };
+
+  const formatQuickSaleInput = (value) => {
+    const numbers = value.replace(/\D/g, '');
+    if (!numbers) return '';
+    const cents = parseInt(numbers, 10);
+    return (cents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
+  const parseQuickSaleInput = (value) => {
+    const numbers = value.replace(/\D/g, '');
+    return parseInt(numbers, 10) / 100 || 0;
+  };
+
+  const confirmQuickSale = async () => {
+    const value = parseQuickSaleInput(quickSaleValue);
+    if (value <= 0) {
+      toast.error('Informe um valor válido');
+      return;
+    }
+
+    const description = quickSaleDescription.trim() || 'Venda Avulsa';
+    
+    // Se quer cadastrar o produto
+    if (wantToRegister) {
+      if (!quickSaleDescription.trim()) {
+        toast.error('Informe o nome do produto para cadastrar');
+        return;
+      }
+      
+      try {
+        const costPrice = parseQuickSaleInput(quickSaleCostPrice);
+        const productData = {
+          name: quickSaleDescription.trim(),
+          price: value,
+          cost_price: costPrice,
+          barcode: quickSaleBarcode.trim() || null,
+          stock: 100,
+          min_stock: 5,
+          unit: 'UN',
+          category: 'Geral'
+        };
+        
+        const response = await api.post('/products', productData);
+        toast.success(`Produto "${quickSaleDescription}" cadastrado!`);
+        
+        // Adiciona ao carrinho o produto cadastrado
+        setCart(prevCart => [...prevCart, {
+          product_id: response.data.id,
+          product_name: response.data.name,
+          unit_price: response.data.price,
+          quantity: 1,
+          maxStock: response.data.stock,
+          unit: response.data.unit
+        }]);
+        
+        loadProducts(); // Recarrega lista de produtos
+      } catch (error) {
+        toast.error('Erro ao cadastrar produto');
+        return;
+      }
+    } else {
+      // Só adiciona ao carrinho sem cadastrar
+      setCart(prevCart => [...prevCart, {
+        product_id: `avulso_${Date.now()}`,
+        product_name: description,
+        unit_price: value,
+        quantity: 1,
+        maxStock: 9999,
+        unit: 'UN',
+        isQuickSale: true
+      }]);
+      
+      toast.success(`${description} adicionado: R$ ${formatQuickSaleInput(quickSaleValue)}`);
+    }
+    
+    setShowQuickSaleModal(false);
   };
 
   const calculateTotal = () => {
@@ -494,10 +593,14 @@ function PDV() {
               onChange={(e) => handleSearch(e.target.value)}
             />
           </div>
+          <button className="btn btn-warning quick-sale-btn" onClick={handleQuickSale}>
+            <FiDollarSign />
+            Venda Avulsa
+          </button>
         </div>
 
         <div className="product-results">
-          {filteredProducts.length > 0 ? (
+          {searchTerm.length >= 2 && filteredProducts.length > 0 ? (
             <div className="product-grid">
               {filteredProducts.map(product => (
                 <div
@@ -515,7 +618,15 @@ function PDV() {
             </div>
           ) : (
             <div className="no-results">
-              <p>Nenhum produto encontrado</p>
+              {searchTerm.length >= 2 ? (
+                <p>Nenhum produto encontrado</p>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '2rem' }}>
+                  <FiSearch style={{ fontSize: '3rem', color: '#9ca3af', marginBottom: '1rem' }} />
+                  <p style={{ color: '#6b7280' }}>Digite o nome ou código do produto para buscar</p>
+                  <p style={{ color: '#9ca3af', fontSize: '0.875rem' }}>ou use o botão "Venda Avulsa" para digitar o valor direto</p>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -859,6 +970,145 @@ function PDV() {
               <button className="btn btn-success" onClick={confirmPixPayment} style={{ background: '#00d4aa', borderColor: '#00d4aa' }}>
                 <FiCheck />
                 Confirmar Recebimento
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Venda Avulsa */}
+      {showQuickSaleModal && (
+        <div className="modal-overlay" onClick={() => setShowQuickSaleModal(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 450 }}>
+            <div className="modal-header" style={{ background: '#f59e0b', color: 'white' }}>
+              <h3 className="modal-title" style={{ color: 'white' }}>
+                <FiDollarSign style={{ marginRight: 8 }} />
+                Venda Avulsa
+              </h3>
+              <button className="modal-close" onClick={() => setShowQuickSaleModal(false)} style={{ color: 'white' }}>×</button>
+            </div>
+            <div className="modal-body">
+              <p style={{ color: '#6b7280', marginBottom: '1rem', textAlign: 'center' }}>
+                Digite o valor da venda sem precisar cadastrar produto
+              </p>
+              
+              <div className="form-group">
+                <label className="form-label">Nome do Produto {wantToRegister && '*'}</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="Ex: Refrigerante, Biscoito..."
+                  value={quickSaleDescription}
+                  onChange={(e) => setQuickSaleDescription(e.target.value)}
+                />
+              </div>
+              
+              <div className="form-group">
+                <label className="form-label" style={{ fontWeight: 600 }}>Preço de Venda (R$) *</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  className="form-input"
+                  placeholder="0,00"
+                  value={formatQuickSaleInput(quickSaleValue)}
+                  onChange={(e) => setQuickSaleValue(e.target.value.replace(/\D/g, ''))}
+                  onKeyDown={(e) => e.key === 'Enter' && !wantToRegister && confirmQuickSale()}
+                  autoFocus
+                  style={{ 
+                    fontSize: '1.5rem', 
+                    textAlign: 'center', 
+                    fontWeight: 700,
+                    padding: '0.75rem'
+                  }}
+                />
+              </div>
+
+              {/* Opção de cadastrar */}
+              <div style={{ 
+                padding: '1rem', 
+                background: wantToRegister ? '#dbeafe' : '#f3f4f6', 
+                borderRadius: '8px',
+                marginBottom: '1rem',
+                border: wantToRegister ? '2px solid #3b82f6' : '1px solid #e5e7eb'
+              }}>
+                <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={wantToRegister}
+                    onChange={(e) => setWantToRegister(e.target.checked)}
+                    style={{ marginRight: '0.75rem', width: 18, height: 18 }}
+                  />
+                  <span style={{ fontWeight: 500 }}>Cadastrar este produto para vendas futuras</span>
+                </label>
+              </div>
+
+              {/* Campos extras para cadastro */}
+              {wantToRegister && (
+                <div style={{ 
+                  padding: '1rem', 
+                  background: '#f0f9ff', 
+                  borderRadius: '8px',
+                  marginBottom: '1rem'
+                }}>
+                  <div className="form-group" style={{ marginBottom: '0.75rem' }}>
+                    <label className="form-label">Código de Barras (opcional)</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="Ex: 7891234567890"
+                      value={quickSaleBarcode}
+                      onChange={(e) => setQuickSaleBarcode(e.target.value)}
+                    />
+                  </div>
+                  
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="form-label">Preço de Custo (opcional)</label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      className="form-input"
+                      placeholder="0,00"
+                      value={formatQuickSaleInput(quickSaleCostPrice)}
+                      onChange={(e) => setQuickSaleCostPrice(e.target.value.replace(/\D/g, ''))}
+                    />
+                    <small style={{ color: '#6b7280' }}>Quanto você pagou no produto</small>
+                  </div>
+                </div>
+              )}
+
+              {quickSaleValue && parseQuickSaleInput(quickSaleValue) > 0 && (
+                <div style={{ 
+                  textAlign: 'center', 
+                  padding: '1rem', 
+                  borderRadius: '8px',
+                  background: '#fef3c7'
+                }}>
+                  <p style={{ fontSize: '0.875rem', color: '#92400e', margin: 0 }}>
+                    {wantToRegister ? 'Produto será cadastrado e adicionado:' : 'Será adicionado ao carrinho:'}
+                  </p>
+                  <p style={{ 
+                    fontSize: '1.5rem', 
+                    fontWeight: 700, 
+                    color: '#d97706', 
+                    margin: 0 
+                  }}>
+                    {formatCurrency(parseQuickSaleInput(quickSaleValue))}
+                  </p>
+                </div>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setShowQuickSaleModal(false)}>
+                Cancelar
+              </button>
+              <button 
+                className="btn" 
+                onClick={confirmQuickSale}
+                disabled={!quickSaleValue || parseQuickSaleInput(quickSaleValue) <= 0 || (wantToRegister && !quickSaleDescription.trim())}
+                style={{ background: '#f59e0b', borderColor: '#f59e0b', color: 'white' }}
+              >
+                <FiPlus />
+                {wantToRegister ? 'Cadastrar e Adicionar' : 'Adicionar ao Carrinho'}
               </button>
             </div>
           </div>
