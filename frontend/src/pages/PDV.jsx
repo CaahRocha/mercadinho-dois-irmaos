@@ -66,6 +66,11 @@ function PDV() {
   const [showDiscountModal, setShowDiscountModal] = useState(false);
   const [discountPassword, setDiscountPassword] = useState('');
   const [discountAuthorized, setDiscountAuthorized] = useState(false);
+  
+  // Estados para Cancelar Item
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelPassword, setCancelPassword] = useState('');
+  const [itemToCancel, setItemToCancel] = useState(null);
 
   useEffect(() => {
     checkOpenRegister();
@@ -227,7 +232,25 @@ function PDV() {
   };
 
   const removeFromCart = (productId) => {
-    setCart(prevCart => prevCart.filter(item => item.product_id !== productId));
+    const item = cart.find(i => i.product_id === productId);
+    setItemToCancel(item);
+    setCancelPassword('');
+    setShowCancelModal(true);
+  };
+
+  const confirmCancelItem = async () => {
+    try {
+      await api.post('/auth/login', {
+        username: 'ederson',
+        password: cancelPassword
+      });
+      setCart(prevCart => prevCart.filter(item => item.product_id !== itemToCancel.product_id));
+      toast.success(`${itemToCancel.product_name} removido do carrinho`);
+      setShowCancelModal(false);
+      setItemToCancel(null);
+    } catch (error) {
+      toast.error('Senha incorreta!');
+    }
   };
 
   const clearCart = () => {
@@ -327,6 +350,12 @@ function PDV() {
     
     // Se quer cadastrar o produto
     if (wantToRegister) {
+      // Verificar se é admin
+      if (user?.role !== 'admin') {
+        toast.error('Apenas administradores podem cadastrar produtos');
+        return;
+      }
+      
       if (!quickSaleDescription.trim()) {
         toast.error('Informe o nome do produto para cadastrar');
         return;
@@ -1057,6 +1086,66 @@ function PDV() {
               >
                 <FiCheck />
                 Autorizar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Cancelar Item do Carrinho */}
+      {showCancelModal && itemToCancel && (
+        <div className="modal-overlay" onClick={() => setShowCancelModal(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 380 }}>
+            <div className="modal-header" style={{ background: '#ef4444', color: 'white' }}>
+              <h3 className="modal-title" style={{ color: 'white' }}>
+                🗑️ Cancelar Item
+              </h3>
+              <button className="modal-close" onClick={() => setShowCancelModal(false)} style={{ color: 'white' }}>×</button>
+            </div>
+            <div className="modal-body">
+              <div style={{ 
+                background: '#fef2f2', 
+                padding: '1rem', 
+                borderRadius: '8px', 
+                marginBottom: '1rem',
+                textAlign: 'center'
+              }}>
+                <p style={{ margin: 0, fontWeight: 600, color: '#991b1b' }}>{itemToCancel.product_name}</p>
+                <p style={{ margin: 0, color: '#dc2626' }}>
+                  {itemToCancel.quantity} {itemToCancel.unit} × {formatCurrency(itemToCancel.unit_price)}
+                </p>
+              </div>
+              
+              <p style={{ color: '#6b7280', marginBottom: '1rem', textAlign: 'center' }}>
+                Digite a senha do administrador para remover este item
+              </p>
+              
+              <div className="form-group">
+                <label className="form-label">Senha do Admin</label>
+                <input
+                  type="password"
+                  className="form-input"
+                  placeholder="Digite a senha..."
+                  value={cancelPassword}
+                  onChange={(e) => setCancelPassword(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && confirmCancelItem()}
+                  autoFocus
+                  style={{ textAlign: 'center', fontSize: '1.25rem' }}
+                />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setShowCancelModal(false)}>
+                Voltar
+              </button>
+              <button 
+                className="btn"
+                onClick={confirmCancelItem}
+                disabled={!cancelPassword}
+                style={{ background: '#ef4444', borderColor: '#ef4444', color: 'white' }}
+              >
+                <FiTrash2 />
+                Remover Item
               </button>
             </div>
           </div>
