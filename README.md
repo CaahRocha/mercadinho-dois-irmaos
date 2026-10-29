@@ -2,24 +2,33 @@
 
 Sistema de Ponto de Venda para mercadinhos.
 
-## Como Usar
+## Requisitos
 
-### Primeiro Uso (Instalação)
-1. Instale o Node.js: https://nodejs.org
-2. Abra o terminal na pasta do projeto
-3. Execute: `npm run install:all`
+- **Node.js** versão 18 ou superior: https://nodejs.org
 
-### Iniciar o Sistema
-1. Abra o terminal na pasta do projeto  
-2. Execute: `npm start`
-3. Abra o navegador em: http://localhost:3001
+## Instalação (Primeiro Uso)
 
-### Usuários
-- **Administrador:** ederson / admin123
-- **Gerente:** nathanie / gerente123
-- **Caixa:** caixa / caixa123
+1. Baixe o projeto do GitHub (botão verde "Code" → "Download ZIP")
+2. Extraia o ZIP
+3. Clique duas vezes no **INSTALAR.bat** e aguarde terminar
+4. Clique duas vezes no **INICIAR.bat**
+
+## Uso Diário
+
+1. Clique duas vezes no **INICIAR.bat**
+2. O navegador abrirá automaticamente
+3. **NÃO FECHE** a janela preta enquanto usa o sistema
+
+## Usuários
+
+| Usuário | Senha | Perfil |
+|---------|-------|--------|
+| ederson | admin123 | Administrador |
+| nathanie | gerente123 | Gerente |
+| caixa | caixa123 | Caixa |
 
 ## Funcionalidades
+
 - PDV (Ponto de Venda)
 - Cadastro de Produtos
 - Cadastro de Clientes
