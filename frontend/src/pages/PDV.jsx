@@ -59,6 +59,13 @@ function PDV() {
   const [quickSaleCostPrice, setQuickSaleCostPrice] = useState('');
   const [quickSaleBarcode, setQuickSaleBarcode] = useState('');
   const [wantToRegister, setWantToRegister] = useState(false);
+  
+  // Estados para Desconto
+  const [discount, setDiscount] = useState('');
+  const [discountType, setDiscountType] = useState('value'); // 'value' ou 'percent'
+  const [showDiscountModal, setShowDiscountModal] = useState(false);
+  const [discountPassword, setDiscountPassword] = useState('');
+  const [discountAuthorized, setDiscountAuthorized] = useState(false);
 
   useEffect(() => {
     checkOpenRegister();
@@ -227,6 +234,64 @@ function PDV() {
     setCart([]);
     setSelectedCustomer(null);
     setPaymentMethod('cash');
+    setDiscount('');
+    setDiscountAuthorized(false);
+  };
+
+  // Funções de Desconto
+  const handleDiscountClick = () => {
+    if (discountAuthorized) {
+      // Já autorizado, só abre para editar
+      return;
+    }
+    setDiscountPassword('');
+    setShowDiscountModal(true);
+  };
+
+  const authorizeDiscount = async () => {
+    try {
+      await api.post('/auth/login', {
+        username: 'ederson',
+        password: discountPassword
+      });
+      setDiscountAuthorized(true);
+      setShowDiscountModal(false);
+      toast.success('Desconto autorizado!');
+    } catch (error) {
+      toast.error('Senha incorreta!');
+    }
+  };
+
+  const clearDiscount = () => {
+    setDiscount('');
+    setDiscountAuthorized(false);
+  };
+
+  const parseDiscountInput = (value) => {
+    const numbers = value.replace(/\D/g, '');
+    return parseInt(numbers, 10) / 100 || 0;
+  };
+
+  const formatDiscountInput = (value) => {
+    const numbers = value.replace(/\D/g, '');
+    if (!numbers) return '';
+    const cents = parseInt(numbers, 10);
+    return (cents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
+  const calculateDiscountValue = () => {
+    if (!discountAuthorized || !discount) return 0;
+    const subtotal = cart.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0);
+    const discountNum = parseDiscountInput(discount);
+    
+    if (discountType === 'percent') {
+      return (subtotal * discountNum) / 100;
+    }
+    return discountNum;
+  };
+
+  const calculateSubtotal = () => {
+    return cart.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0);
   };
 
   // Função para Venda Avulsa
@@ -264,6 +329,13 @@ function PDV() {
     if (wantToRegister) {
       if (!quickSaleDescription.trim()) {
         toast.error('Informe o nome do produto para cadastrar');
+        return;
+      }
+      
+      // Verificar se preço de venda é menor que preço de custo
+      const costPrice = parseQuickSaleInput(quickSaleCostPrice);
+      if (costPrice > 0 && value < costPrice) {
+        toast.error(`Preço de venda (${formatCurrency(value)}) não pode ser menor que o preço de custo (${formatCurrency(costPrice)})`);
         return;
       }
       
@@ -336,7 +408,9 @@ function PDV() {
   };
 
   const calculateTotal = () => {
-    return cart.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0);
+    const subtotal = calculateSubtotal();
+    const discountValue = calculateDiscountValue();
+    return Math.max(0, subtotal - discountValue);
   };
 
   const formatCurrency = (value) => {
@@ -697,6 +771,77 @@ function PDV() {
                   <span>Itens:</span>
                   <span>{cart.length}</span>
                 </div>
+                <div className="cart-row">
+                  <span>Subtotal:</span>
+                  <span>{formatCurrency(calculateSubtotal())}</span>
+                </div>
+                
+                {/* Desconto */}
+                <div className="cart-row discount-row">
+                  <span>Desconto:</span>
+                  {discountAuthorized ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <select 
+                        value={discountType} 
+                        onChange={(e) => setDiscountType(e.target.value)}
+                        style={{ padding: '0.25rem', borderRadius: '4px', border: '1px solid #d1d5db' }}
+                      >
+                        <option value="value">R$</option>
+                        <option value="percent">%</option>
+                      </select>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={discountType === 'value' ? formatDiscountInput(discount) : discount.replace(/\D/g, '')}
+                        onChange={(e) => setDiscount(e.target.value.replace(/\D/g, ''))}
+                        placeholder="0,00"
+                        style={{ 
+                          width: '70px', 
+                          padding: '0.25rem', 
+                          borderRadius: '4px', 
+                          border: '1px solid #d1d5db',
+                          textAlign: 'right'
+                        }}
+                      />
+                      <button 
+                        onClick={clearDiscount}
+                        style={{ 
+                          background: '#ef4444', 
+                          color: 'white', 
+                          border: 'none', 
+                          borderRadius: '4px',
+                          padding: '0.25rem 0.5rem',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <FiX size={14} />
+                      </button>
+                    </div>
+                  ) : (
+                    <button 
+                      onClick={handleDiscountClick}
+                      style={{ 
+                        background: '#3b82f6', 
+                        color: 'white', 
+                        border: 'none', 
+                        borderRadius: '4px',
+                        padding: '0.25rem 0.75rem',
+                        cursor: 'pointer',
+                        fontSize: '0.875rem'
+                      }}
+                    >
+                      + Desconto
+                    </button>
+                  )}
+                </div>
+                
+                {calculateDiscountValue() > 0 && (
+                  <div className="cart-row" style={{ color: '#16a34a' }}>
+                    <span>Desconto aplicado:</span>
+                    <span>-{formatCurrency(calculateDiscountValue())}</span>
+                  </div>
+                )}
+                
                 <div className="cart-row total">
                   <span>Total:</span>
                   <span>{formatCurrency(calculateTotal())}</span>
@@ -866,6 +1011,52 @@ function PDV() {
             <div className="modal-footer">
               <button className="btn btn-secondary" onClick={() => setShowCustomerModal(false)}>
                 Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Autorização de Desconto */}
+      {showDiscountModal && (
+        <div className="modal-overlay" onClick={() => setShowDiscountModal(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 350 }}>
+            <div className="modal-header" style={{ background: '#3b82f6', color: 'white' }}>
+              <h3 className="modal-title" style={{ color: 'white' }}>
+                🔐 Autorizar Desconto
+              </h3>
+              <button className="modal-close" onClick={() => setShowDiscountModal(false)} style={{ color: 'white' }}>×</button>
+            </div>
+            <div className="modal-body">
+              <p style={{ color: '#6b7280', marginBottom: '1rem', textAlign: 'center' }}>
+                Digite a senha do administrador para liberar o desconto
+              </p>
+              
+              <div className="form-group">
+                <label className="form-label">Senha do Admin</label>
+                <input
+                  type="password"
+                  className="form-input"
+                  placeholder="Digite a senha..."
+                  value={discountPassword}
+                  onChange={(e) => setDiscountPassword(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && authorizeDiscount()}
+                  autoFocus
+                  style={{ textAlign: 'center', fontSize: '1.25rem' }}
+                />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setShowDiscountModal(false)}>
+                Cancelar
+              </button>
+              <button 
+                className="btn btn-primary"
+                onClick={authorizeDiscount}
+                disabled={!discountPassword}
+              >
+                <FiCheck />
+                Autorizar
               </button>
             </div>
           </div>
