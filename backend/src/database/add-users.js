@@ -19,7 +19,6 @@ const addUsers = async () => {
   // Usuários padrão do sistema - Mercadinho Dois Irmãos
   const defaultUsers = [
     { name: 'Ederson', username: 'ederson', password: 'admin123', role: 'admin' },
-    { name: 'Nathanie ❤️', username: 'nathanie', password: 'gerente123', role: 'admin' },
     { name: 'Operador de Caixa', username: 'caixa', password: 'caixa123', role: 'cashier' },
   ];
 
@@ -55,9 +54,8 @@ const addUsers = async () => {
   if (added > 0) {
     console.log('\n✅ Novos usuários criados com sucesso!');
     console.log('\nSenhas padrão:');
-    console.log('  ederson  → admin123  (Admin)');
-    console.log('  nathanie → gerente123 (Admin)');
-    console.log('  caixa    → caixa123  (Caixa)');
+    console.log('  ederson → admin123 (Admin)');
+    console.log('  caixa   → caixa123 (Caixa)');
   } else {
     console.log('\n✅ Todos os usuários já existem. Nenhuma alteração feita.');
   }
