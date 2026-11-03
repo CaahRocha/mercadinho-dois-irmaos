@@ -62,10 +62,25 @@ function Products() {
     }
     
     try {
+      // Se for só números, tenta buscar por código de barras primeiro
+      if (/^\d+$/.test(term)) {
+        try {
+          const barcodeResponse = await api.get(`/products/barcode/${term}`);
+          if (barcodeResponse.data) {
+            setProducts([barcodeResponse.data]);
+            return;
+          }
+        } catch (e) {
+          // Não encontrou por barcode, continua com busca por nome
+        }
+      }
+      
+      // Busca por nome
       const response = await api.get(`/products/search/${encodeURIComponent(term)}`);
       setProducts(response.data);
     } catch (error) {
       console.error('Erro na busca:', error);
+      setProducts([]);
     }
   };
 
