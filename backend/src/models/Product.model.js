@@ -23,16 +23,25 @@ class ProductModel {
   }
 
   /**
-   * Buscar produtos por nome (busca parcial)
+   * Buscar produtos por nome ou código de barras (busca parcial)
    */
-  static searchByName(name) {
+  static searchByName(term) {
+    // Se for só números, tenta buscar por barcode exato primeiro
+    if (/^\d+$/.test(term)) {
+      const byBarcode = this.findByBarcode(term);
+      if (byBarcode) {
+        return [byBarcode];
+      }
+    }
+    
+    // Busca por nome ou barcode parcial
     const stmt = this.db.prepare(`
       SELECT * FROM products 
-      WHERE name LIKE ? AND active = 1 
+      WHERE (name LIKE ? OR barcode LIKE ?) AND active = 1 
       ORDER BY name
       LIMIT 20
     `);
-    return stmt.all(`%${name}%`);
+    return stmt.all(`%${term}%`, `%${term}%`);
   }
 
   /**
