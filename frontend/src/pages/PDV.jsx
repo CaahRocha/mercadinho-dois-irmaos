@@ -467,7 +467,8 @@ function PDV() {
   // Funções para Fiado
   const handleSelectFiado = () => {
     setShowCustomerModal(true);
-    loadCustomers();
+    setCustomers([]); // Começa vazio, só mostra quando pesquisar
+    setCustomerSearch('');
   };
 
   const loadCustomers = async () => {
@@ -488,8 +489,8 @@ function PDV() {
       } catch (error) {
         console.error('Erro na busca:', error);
       }
-    } else if (term === '') {
-      loadCustomers();
+    } else {
+      setCustomers([]); // Limpa a lista se apagar a busca
     }
   };
 
@@ -1046,8 +1047,17 @@ function PDV() {
                   })
                 ) : (
                   <div style={{ textAlign: 'center', padding: 24, color: '#6b7280' }}>
-                    <p>Nenhum cliente encontrado</p>
-                    <p style={{ fontSize: '0.875rem' }}>Cadastre clientes em "Clientes (Fiado)"</p>
+                    {customerSearch.length < 2 ? (
+                      <>
+                        <p>Digite o nome do cliente para buscar</p>
+                        <p style={{ fontSize: '0.875rem' }}>Mínimo 2 caracteres</p>
+                      </>
+                    ) : (
+                      <>
+                        <p>Nenhum cliente encontrado</p>
+                        <p style={{ fontSize: '0.875rem' }}>Cadastre clientes em "Clientes (Fiado)"</p>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
