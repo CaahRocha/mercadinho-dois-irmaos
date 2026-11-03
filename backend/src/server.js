@@ -67,15 +67,16 @@ dbPromise.then(() => {
     });
   });
 
-  // Iniciar servidor
-  app.listen(PORT, () => {
+  // Iniciar servidor (0.0.0.0 permite acesso de outras maquinas na rede)
+  app.listen(PORT, '0.0.0.0', () => {
     console.log(`
-  ╔════════════════════════════════════════════╗
-  ║         SISTEMA MERCADO - API              ║
-  ╠════════════════════════════════════════════╣
-  ║  Servidor rodando na porta ${PORT}            ║
-  ║  http://localhost:${PORT}                     ║
-  ╚════════════════════════════════════════════╝
+  ========================================
+       SISTEMA MERCADO - API
+  ========================================
+   Servidor rodando na porta ${PORT}
+   Local: http://localhost:${PORT}
+   Rede:  http://SEU-IP:${PORT}
+  ========================================
     `);
   });
 }).catch(err => {
