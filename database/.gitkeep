@@ -1,0 +1,3 @@
+# Esta pasta armazena o banco de dados local (mercado.db)
+# O arquivo mercado.db é criado automaticamente ao iniciar o sistema
+# NAO EXCLUA esta pasta ao atualizar o sistema!
