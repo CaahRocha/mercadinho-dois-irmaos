@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
-import { FiSearch, FiCalendar, FiUser, FiPackage, FiEye, FiX, FiFilter } from 'react-icons/fi';
+import { FiSearch, FiCalendar, FiUser, FiPackage, FiEye, FiX, FiFilter, FiShield } from 'react-icons/fi';
 import './Sales.css';
 
 function Sales() {
@@ -10,6 +10,13 @@ function Sales() {
   const [sales, setSales] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedSale, setSelectedSale] = useState(null);
+  
+  // Modal de cancelamento com autorização
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelAuthCode, setCancelAuthCode] = useState('');
+  const [cancelReason, setCancelReason] = useState('');
+  const [saleToCancel, setSaleToCancel] = useState(null);
+  const [adminAuthCode, setAdminAuthCode] = useState('');
   
   // Filtros
   const [filters, setFilters] = useState({
@@ -69,7 +76,17 @@ function Sales() {
 
   useEffect(() => {
     loadSales();
+    loadSettings();
   }, [filters.startDate, filters.endDate, filters.status]);
+
+  const loadSettings = async () => {
+    try {
+      const response = await api.get('/settings');
+      if (response.data.admin_auth_code) setAdminAuthCode(response.data.admin_auth_code);
+    } catch (error) {
+      console.error('Erro ao carregar configurações:', error);
+    }
+  };
 
   const loadSales = async () => {
     setLoading(true);
@@ -109,15 +126,37 @@ function Sales() {
     }
   };
 
-  const handleCancelSale = async (saleId) => {
-    const reason = window.prompt('Motivo do cancelamento:');
-    if (!reason) return;
+  const handleCancelSale = (sale) => {
+    setSaleToCancel(sale);
+    setCancelAuthCode('');
+    setCancelReason('');
+    setShowCancelModal(true);
+  };
+
+  const confirmCancelSale = async () => {
+    if (!cancelReason.trim()) {
+      toast.error('Informe o motivo do cancelamento');
+      return;
+    }
+    
+    if (!adminAuthCode) {
+      toast.error('Código de autorização não cadastrado! Configure em Configurações.');
+      return;
+    }
+    
+    if (cancelAuthCode !== adminAuthCode) {
+      toast.error('Código de autorização incorreto!');
+      setCancelAuthCode('');
+      return;
+    }
 
     try {
-      await api.post(`/sales/${saleId}/cancel`, { reason });
+      await api.post(`/sales/${saleToCancel.id}/cancel`, { reason: cancelReason });
       toast.success('Venda cancelada!');
       loadSales();
       setSelectedSale(null);
+      setShowCancelModal(false);
+      setSaleToCancel(null);
     } catch (error) {
       const message = error.response?.data?.message || 'Erro ao cancelar';
       toast.error(message);
@@ -399,13 +438,81 @@ function Sales() {
               {selectedSale.status === 'completed' && isManager && (
                 <button 
                   className="btn btn-danger"
-                  onClick={() => handleCancelSale(selectedSale.id)}
+                  onClick={() => handleCancelSale(selectedSale)}
                 >
                   <FiX /> Cancelar Venda
                 </button>
               )}
               <button className="btn btn-secondary" onClick={() => setSelectedSale(null)}>
                 Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Cancelamento com Autorização */}
+      {showCancelModal && saleToCancel && (
+        <div className="modal-overlay" onClick={() => setShowCancelModal(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 420 }}>
+            <div className="modal-header" style={{ background: '#ef4444', color: 'white' }}>
+              <h3 className="modal-title" style={{ color: 'white' }}>
+                <FiShield style={{ marginRight: 8 }} />
+                Cancelar Venda
+              </h3>
+              <button className="modal-close" onClick={() => setShowCancelModal(false)} style={{ color: 'white' }}>×</button>
+            </div>
+            <div className="modal-body">
+              <div style={{ 
+                background: '#fef2f2', 
+                padding: '1rem', 
+                borderRadius: '8px', 
+                marginBottom: '1rem',
+                textAlign: 'center'
+              }}>
+                <p style={{ margin: 0, fontWeight: 600, color: '#991b1b' }}>
+                  Venda de {formatCurrency(saleToCancel.total)}
+                </p>
+                <p style={{ margin: 0, color: '#dc2626', fontSize: '0.875rem' }}>
+                  {formatDateTime(saleToCancel.created_at)}
+                </p>
+              </div>
+              
+              <div className="form-group">
+                <label className="form-label">Motivo do Cancelamento *</label>
+                <textarea
+                  className="form-input"
+                  rows="2"
+                  placeholder="Informe o motivo..."
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  autoFocus
+                />
+              </div>
+              
+              <div className="form-group">
+                <label className="form-label">Código de Autorização *</label>
+                <input
+                  type="password"
+                  className="form-input"
+                  placeholder="Escaneie o cartão de autorização..."
+                  value={cancelAuthCode}
+                  onChange={(e) => setCancelAuthCode(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && confirmCancelSale()}
+                  style={{ textAlign: 'center', fontSize: '1.25rem' }}
+                />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setShowCancelModal(false)}>
+                Voltar
+              </button>
+              <button 
+                className="btn btn-danger"
+                onClick={confirmCancelSale}
+                disabled={!cancelReason.trim() || !cancelAuthCode}
+              >
+                <FiX /> Confirmar Cancelamento
               </button>
             </div>
           </div>
