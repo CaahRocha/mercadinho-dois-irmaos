@@ -241,6 +241,70 @@ class ProductController {
       });
     }
   }
+
+  /**
+   * Renomear categoria
+   * PUT /api/products/category/rename
+   */
+  static async renameCategory(req, res) {
+    try {
+      const { oldName, newName } = req.body;
+
+      const result = ProductModel.renameCategory(oldName, newName);
+
+      if (result.changes === 0) {
+        return res.status(404).json({
+          error: true,
+          message: 'Nenhum produto encontrado com essa categoria'
+        });
+      }
+
+      res.json({
+        message: `Categoria renomeada com sucesso. ${result.changes} produto(s) atualizado(s).`,
+        updatedCount: result.changes
+      });
+    } catch (error) {
+      console.error('Erro ao renomear categoria:', error);
+      res.status(500).json({
+        error: true,
+        message: 'Erro interno do servidor'
+      });
+    }
+  }
+
+  /**
+   * Atualizar preço em lote
+   * PUT /api/products/batch/price
+   */
+  static async batchUpdatePrice(req, res) {
+    try {
+      const { productIds, price } = req.body;
+
+      const result = ProductModel.batchUpdatePrice(productIds, price);
+
+      if (result.changes === 0) {
+        return res.status(404).json({
+          error: true,
+          message: 'Nenhum produto encontrado'
+        });
+      }
+
+      // Retorna os produtos atualizados
+      const updatedProducts = ProductModel.findByIds(productIds);
+
+      res.json({
+        message: `Preço atualizado com sucesso. ${result.changes} produto(s) atualizado(s).`,
+        updatedCount: result.changes,
+        products: updatedProducts
+      });
+    } catch (error) {
+      console.error('Erro ao atualizar preços em lote:', error);
+      res.status(500).json({
+        error: true,
+        message: 'Erro interno do servidor'
+      });
+    }
+  }
 }
 
 module.exports = ProductController;

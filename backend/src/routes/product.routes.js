@@ -59,6 +59,22 @@ router.patch('/:id/stock', [
   validate
 ], ProductController.updateStock);
 
+// PUT /api/products/category/rename - Renomear categoria (admin e manager)
+router.put('/category/rename', [
+  authorize(ROLES.ADMIN, ROLES.MANAGER),
+  body('oldName').notEmpty().withMessage('Nome antigo é obrigatório'),
+  body('newName').notEmpty().withMessage('Nome novo é obrigatório'),
+  validate
+], ProductController.renameCategory);
+
+// PUT /api/products/batch/price - Alterar preço em lote (admin e manager)
+router.put('/batch/price', [
+  authorize(ROLES.ADMIN, ROLES.MANAGER),
+  body('productIds').isArray({ min: 1 }).withMessage('Selecione pelo menos um produto'),
+  body('price').isFloat({ min: 0 }).withMessage('Preço deve ser um valor positivo'),
+  validate
+], ProductController.batchUpdatePrice);
+
 // DELETE /api/products/:id - Desativar produto (admin e manager)
 router.delete('/:id', authorize(ROLES.ADMIN, ROLES.MANAGER), ProductController.delete);
 

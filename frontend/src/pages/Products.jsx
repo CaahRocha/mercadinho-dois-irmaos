@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
-import { FiPlus, FiEdit2, FiTrash2, FiSearch } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiSearch, FiDollarSign, FiTag } from 'react-icons/fi';
 
 function Products() {
   const { isManager } = useAuth();
@@ -24,6 +24,14 @@ function Products() {
     unit: 'UN'
   });
 
+  // Estados para seleção múltipla e modais
+  const [selectedProducts, setSelectedProducts] = useState([]);
+  const [showBatchPriceModal, setShowBatchPriceModal] = useState(false);
+  const [showRenameCategoryModal, setShowRenameCategoryModal] = useState(false);
+  const [batchPrice, setBatchPrice] = useState('');
+  const [categoryToRename, setCategoryToRename] = useState('');
+  const [newCategoryName, setNewCategoryName] = useState('');
+
   useEffect(() => {
     loadProducts();
     loadCategories();
@@ -37,6 +45,7 @@ function Products() {
       }
       const response = await api.get(url);
       setProducts(response.data);
+      setSelectedProducts([]); // Limpar seleção ao recarregar
     } catch (error) {
       toast.error('Erro ao carregar produtos');
     } finally {
@@ -71,6 +80,7 @@ function Products() {
           const barcodeResponse = await api.get(`/products/barcode/${cleanTerm}`);
           if (barcodeResponse.data) {
             setProducts([barcodeResponse.data]);
+            setSelectedProducts([]);
             return;
           }
         } catch (e) {
@@ -82,6 +92,7 @@ function Products() {
       if (cleanTerm.length >= 2) {
         const response = await api.get(`/products/search/${encodeURIComponent(cleanTerm)}`);
         setProducts(response.data);
+        setSelectedProducts([]);
       } else if (/^\d+$/.test(cleanTerm)) {
         // Se for número com menos de 2 dígitos e não achou por barcode
         setProducts([]);
@@ -165,11 +176,97 @@ function Products() {
     }
   };
 
+  // Funções para seleção múltipla
+  const toggleProductSelection = (productId) => {
+    setSelectedProducts(prev => {
+      if (prev.includes(productId)) {
+        return prev.filter(id => id !== productId);
+      } else {
+        return [...prev, productId];
+      }
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedProducts.length === products.length) {
+      setSelectedProducts([]);
+    } else {
+      setSelectedProducts(products.map(p => p.id));
+    }
+  };
+
+  // Atualizar preço em lote
+  const handleBatchPriceUpdate = async (e) => {
+    e.preventDefault();
+
+    if (selectedProducts.length === 0) {
+      toast.error('Selecione pelo menos um produto');
+      return;
+    }
+
+    const price = parseFloat(batchPrice);
+    if (isNaN(price) || price < 0) {
+      toast.error('Informe um preço válido');
+      return;
+    }
+
+    try {
+      const response = await api.put('/products/batch/price', {
+        productIds: selectedProducts,
+        price: price
+      });
+      toast.success(response.data.message);
+      setShowBatchPriceModal(false);
+      setBatchPrice('');
+      loadProducts();
+    } catch (error) {
+      const message = error.response?.data?.message || 'Erro ao atualizar preços';
+      toast.error(message);
+    }
+  };
+
+  // Renomear categoria
+  const openRenameCategoryModal = (category) => {
+    setCategoryToRename(category);
+    setNewCategoryName(category);
+    setShowRenameCategoryModal(true);
+  };
+
+  const handleRenameCategory = async (e) => {
+    e.preventDefault();
+
+    if (!newCategoryName.trim()) {
+      toast.error('Informe o novo nome da categoria');
+      return;
+    }
+
+    try {
+      const response = await api.put('/products/category/rename', {
+        oldName: categoryToRename,
+        newName: newCategoryName.trim()
+      });
+      toast.success(response.data.message);
+      setShowRenameCategoryModal(false);
+      setCategoryToRename('');
+      setNewCategoryName('');
+      loadProducts();
+      loadCategories();
+    } catch (error) {
+      const message = error.response?.data?.message || 'Erro ao renomear categoria';
+      toast.error(message);
+    }
+  };
+
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL'
     }).format(value);
+  };
+
+  // Produtos selecionados (para exibir no modal)
+  const getSelectedProductsDetails = () => {
+    return products.filter(p => selectedProducts.includes(p.id));
   };
 
   return (
@@ -179,31 +276,43 @@ function Products() {
           <h1>Produtos</h1>
           <p>Gerencie o catálogo de produtos</p>
         </div>
-        {isManager && (
-          <button className="btn btn-primary" onClick={() => openModal()}>
-            <FiPlus />
-            Novo Produto
-          </button>
-        )}
+        <div className="flex gap-2">
+          {isManager && selectedProducts.length > 0 && (
+            <button 
+              className="btn btn-secondary" 
+              onClick={() => setShowBatchPriceModal(true)}
+              title="Alterar preço dos selecionados"
+            >
+              <FiDollarSign />
+              Alterar Preço ({selectedProducts.length})
+            </button>
+          )}
+          {isManager && (
+            <button className="btn btn-primary" onClick={() => openModal()}>
+              <FiPlus />
+              Novo Produto
+            </button>
+          )}
+        </div>
       </header>
 
       {/* Filtros */}
       <div className="card mb-4">
-        <div className="flex gap-4" style={{ flexWrap: 'wrap' }}>
-          <div className="form-group" style={{ flex: 1, minWidth: 200 }}>
+        <div className="flex gap-4" style={{ flexWrap: 'wrap', alignItems: 'flex-end' }}>
+          <div className="form-group" style={{ flex: 1, minWidth: 200, marginBottom: 0 }}>
             <div className="input-icon" style={{ position: 'relative' }}>
               <FiSearch style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
               <input
                 type="text"
                 className="form-input"
-                placeholder="Buscar produto..."
+                placeholder="Buscar por nome ou código..."
                 value={searchTerm}
                 onChange={(e) => handleSearch(e.target.value)}
                 style={{ paddingLeft: '2.5rem' }}
               />
             </div>
           </div>
-          <div className="form-group" style={{ width: 200 }}>
+          <div className="form-group" style={{ width: 200, marginBottom: 0 }}>
             <select
               className="form-input form-select"
               value={selectedCategory}
@@ -215,8 +324,39 @@ function Products() {
               ))}
             </select>
           </div>
+          {isManager && selectedCategory && (
+            <button 
+              className="btn btn-secondary"
+              onClick={() => openRenameCategoryModal(selectedCategory)}
+              title="Renomear esta categoria"
+            >
+              <FiTag />
+              Renomear Categoria
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Info de seleção */}
+      {isManager && products.length > 0 && (
+        <div className="card mb-4" style={{ padding: '0.75rem 1rem', background: '#f0f9ff' }}>
+          <div className="flex justify-between items-center">
+            <span style={{ color: '#0369a1', fontSize: '0.9rem' }}>
+              {selectedProducts.length > 0 
+                ? `${selectedProducts.length} produto(s) selecionado(s)` 
+                : 'Marque os produtos para alterar o preço em lote'}
+            </span>
+            {products.length > 0 && (
+              <button 
+                className="btn btn-sm btn-secondary"
+                onClick={toggleSelectAll}
+              >
+                {selectedProducts.length === products.length ? 'Desmarcar Todos' : 'Selecionar Todos'}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Tabela */}
       <div className="card">
@@ -224,6 +364,16 @@ function Products() {
           <table className="table">
             <thead>
               <tr>
+                {isManager && (
+                  <th style={{ width: 40 }}>
+                    <input 
+                      type="checkbox"
+                      checked={products.length > 0 && selectedProducts.length === products.length}
+                      onChange={toggleSelectAll}
+                      title="Selecionar todos"
+                    />
+                  </th>
+                )}
                 <th>Código</th>
                 <th>Nome</th>
                 <th>Categoria</th>
@@ -234,7 +384,20 @@ function Products() {
             </thead>
             <tbody>
               {products.map(product => (
-                <tr key={product.id}>
+                <tr 
+                  key={product.id} 
+                  className={selectedProducts.includes(product.id) ? 'selected-row' : ''}
+                  style={selectedProducts.includes(product.id) ? { backgroundColor: '#eff6ff' } : {}}
+                >
+                  {isManager && (
+                    <td>
+                      <input 
+                        type="checkbox"
+                        checked={selectedProducts.includes(product.id)}
+                        onChange={() => toggleProductSelection(product.id)}
+                      />
+                    </td>
+                  )}
                   <td>{product.barcode || '-'}</td>
                   <td>{product.name}</td>
                   <td>{product.category || '-'}</td>
@@ -266,7 +429,7 @@ function Products() {
               ))}
               {products.length === 0 && (
                 <tr>
-                  <td colSpan={isManager ? 6 : 5} className="text-center text-muted">
+                  <td colSpan={isManager ? 7 : 5} className="text-center text-muted">
                     Nenhum produto encontrado
                   </td>
                 </tr>
@@ -276,7 +439,7 @@ function Products() {
         </div>
       </div>
 
-      {/* Modal */}
+      {/* Modal de Produto */}
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
@@ -385,6 +548,109 @@ function Products() {
                 </button>
                 <button type="submit" className="btn btn-primary">
                   {editingProduct ? 'Salvar' : 'Cadastrar'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Alterar Preço em Lote */}
+      {showBatchPriceModal && (
+        <div className="modal-overlay" onClick={() => setShowBatchPriceModal(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 500 }}>
+            <div className="modal-header">
+              <h3 className="modal-title">Alterar Preço em Lote</h3>
+              <button className="modal-close" onClick={() => setShowBatchPriceModal(false)}>×</button>
+            </div>
+            <form onSubmit={handleBatchPriceUpdate}>
+              <div className="modal-body">
+                <p style={{ marginBottom: '1rem', color: '#6b7280' }}>
+                  Você está alterando o preço de <strong>{selectedProducts.length}</strong> produto(s):
+                </p>
+                
+                <div style={{ 
+                  maxHeight: 150, 
+                  overflowY: 'auto', 
+                  marginBottom: '1rem',
+                  padding: '0.75rem',
+                  background: '#f9fafb',
+                  borderRadius: '0.375rem',
+                  fontSize: '0.875rem'
+                }}>
+                  {getSelectedProductsDetails().map(p => (
+                    <div key={p.id} style={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between',
+                      padding: '0.25rem 0',
+                      borderBottom: '1px solid #e5e7eb'
+                    }}>
+                      <span>{p.name}</span>
+                      <span style={{ color: '#9ca3af' }}>{formatCurrency(p.price)}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Novo Preço *</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    className="form-input"
+                    placeholder="0,00"
+                    value={batchPrice}
+                    onChange={(e) => setBatchPrice(e.target.value)}
+                    required
+                    autoFocus
+                  />
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setShowBatchPriceModal(false)}>
+                  Cancelar
+                </button>
+                <button type="submit" className="btn btn-primary">
+                  Atualizar Preços
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Renomear Categoria */}
+      {showRenameCategoryModal && (
+        <div className="modal-overlay" onClick={() => setShowRenameCategoryModal(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 400 }}>
+            <div className="modal-header">
+              <h3 className="modal-title">Renomear Categoria</h3>
+              <button className="modal-close" onClick={() => setShowRenameCategoryModal(false)}>×</button>
+            </div>
+            <form onSubmit={handleRenameCategory}>
+              <div className="modal-body">
+                <p style={{ marginBottom: '1rem', color: '#6b7280' }}>
+                  Todos os produtos da categoria "<strong>{categoryToRename}</strong>" serão atualizados.
+                </p>
+                
+                <div className="form-group">
+                  <label className="form-label">Novo Nome da Categoria *</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={newCategoryName}
+                    onChange={(e) => setNewCategoryName(e.target.value)}
+                    required
+                    autoFocus
+                  />
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setShowRenameCategoryModal(false)}>
+                  Cancelar
+                </button>
+                <button type="submit" className="btn btn-primary">
+                  Renomear
                 </button>
               </div>
             </form>

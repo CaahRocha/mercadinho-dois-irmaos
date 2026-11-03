@@ -175,6 +175,40 @@ class ProductModel {
     const stmt = this.db.prepare('UPDATE products SET active = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?');
     return stmt.run(id);
   }
+
+  /**
+   * Renomear categoria em todos os produtos
+   */
+  static renameCategory(oldName, newName) {
+    const stmt = this.db.prepare(`
+      UPDATE products 
+      SET category = ?, updated_at = CURRENT_TIMESTAMP 
+      WHERE category = ?
+    `);
+    return stmt.run(newName, oldName);
+  }
+
+  /**
+   * Atualizar preço em lote para múltiplos produtos
+   */
+  static batchUpdatePrice(productIds, price) {
+    const placeholders = productIds.map(() => '?').join(',');
+    const stmt = this.db.prepare(`
+      UPDATE products 
+      SET price = ?, updated_at = CURRENT_TIMESTAMP 
+      WHERE id IN (${placeholders})
+    `);
+    return stmt.run(price, ...productIds);
+  }
+
+  /**
+   * Buscar produtos por lista de IDs
+   */
+  static findByIds(ids) {
+    const placeholders = ids.map(() => '?').join(',');
+    const stmt = this.db.prepare(`SELECT * FROM products WHERE id IN (${placeholders}) ORDER BY name`);
+    return stmt.all(...ids);
+  }
 }
 
 module.exports = ProductModel;
