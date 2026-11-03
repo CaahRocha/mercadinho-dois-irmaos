@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
-import { FiSearch, FiCalendar, FiUser, FiPackage, FiEye, FiX } from 'react-icons/fi';
+import { FiSearch, FiCalendar, FiUser, FiPackage, FiEye, FiX, FiFilter } from 'react-icons/fi';
 import './Sales.css';
 
 function Sales() {
@@ -16,7 +16,8 @@ function Sales() {
     startDate: new Date().toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[0],
     productSearch: '',
-    status: ''
+    status: '',
+    period: 'today' // 'today', 'week', 'month', 'year', 'custom'
   });
 
   // Estatísticas
@@ -25,6 +26,46 @@ function Sales() {
     count: 0,
     cancelled: 0
   });
+
+  // Função para calcular datas baseado no período
+  const getDatesByPeriod = (period) => {
+    const today = new Date();
+    let startDate, endDate;
+    
+    switch (period) {
+      case 'today':
+        startDate = today.toISOString().split('T')[0];
+        endDate = today.toISOString().split('T')[0];
+        break;
+      case 'week':
+        const weekStart = new Date(today);
+        weekStart.setDate(today.getDate() - today.getDay()); // Domingo
+        startDate = weekStart.toISOString().split('T')[0];
+        endDate = today.toISOString().split('T')[0];
+        break;
+      case 'month':
+        startDate = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+        endDate = today.toISOString().split('T')[0];
+        break;
+      case 'year':
+        startDate = new Date(today.getFullYear(), 0, 1).toISOString().split('T')[0];
+        endDate = today.toISOString().split('T')[0];
+        break;
+      default:
+        return null; // custom - não muda as datas
+    }
+    
+    return { startDate, endDate };
+  };
+
+  const handlePeriodChange = (period) => {
+    const dates = getDatesByPeriod(period);
+    if (dates) {
+      setFilters({ ...filters, period, startDate: dates.startDate, endDate: dates.endDate });
+    } else {
+      setFilters({ ...filters, period });
+    }
+  };
 
   useEffect(() => {
     loadSales();
@@ -150,6 +191,40 @@ function Sales() {
 
       {/* Filtros */}
       <div className="card mb-4">
+        {/* Botões de período rápido */}
+        <div className="period-buttons" style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+          <button 
+            className={`btn btn-sm ${filters.period === 'today' ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={() => handlePeriodChange('today')}
+          >
+            Hoje
+          </button>
+          <button 
+            className={`btn btn-sm ${filters.period === 'week' ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={() => handlePeriodChange('week')}
+          >
+            Esta Semana
+          </button>
+          <button 
+            className={`btn btn-sm ${filters.period === 'month' ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={() => handlePeriodChange('month')}
+          >
+            Este Mês
+          </button>
+          <button 
+            className={`btn btn-sm ${filters.period === 'year' ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={() => handlePeriodChange('year')}
+          >
+            Este Ano
+          </button>
+          <button 
+            className={`btn btn-sm ${filters.period === 'custom' ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={() => setFilters({ ...filters, period: 'custom' })}
+          >
+            <FiFilter /> Personalizado
+          </button>
+        </div>
+        
         <div className="filters-grid">
           <div className="form-group">
             <label className="form-label">
@@ -159,7 +234,7 @@ function Sales() {
               type="date"
               className="form-input"
               value={filters.startDate}
-              onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
+              onChange={(e) => setFilters({ ...filters, startDate: e.target.value, period: 'custom' })}
             />
           </div>
           <div className="form-group">
@@ -170,7 +245,7 @@ function Sales() {
               type="date"
               className="form-input"
               value={filters.endDate}
-              onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
+              onChange={(e) => setFilters({ ...filters, endDate: e.target.value, period: 'custom' })}
             />
           </div>
           <div className="form-group">

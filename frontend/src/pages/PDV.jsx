@@ -120,13 +120,17 @@ function PDV() {
     
     if (term.length >= 2) {
       try {
-        // Primeiro tenta buscar por código de barras
-        if (/^\d+$/.test(term) && term.length >= 8) {
-          const response = await api.get(`/products/barcode/${term}`);
-          if (response.data) {
-            addToCart(response.data);
-            setSearchTerm('');
-            return;
+        // Primeiro tenta buscar por código de barras (se for só números)
+        if (/^\d+$/.test(term)) {
+          try {
+            const response = await api.get(`/products/barcode/${term}`);
+            if (response.data) {
+              addToCart(response.data);
+              setSearchTerm('');
+              return;
+            }
+          } catch (e) {
+            // Não encontrou por barcode, continua com busca por nome
           }
         }
         
@@ -134,7 +138,8 @@ function PDV() {
         const response = await api.get(`/products/search/${term}`);
         setProducts(response.data);
       } catch (error) {
-        // Se não encontrou por barcode, continua mostrando lista
+        // Se não encontrou, mostra lista vazia
+        setProducts([]);
       }
     } else if (term === '') {
       loadProducts();

@@ -30,7 +30,7 @@ class CustomerModel {
   /**
    * Listar todos os clientes
    */
-  static findAll({ active = true, withDebt = false } = {}) {
+  static findAll({ active = true, withDebt = false, withHistory = false } = {}) {
     let query = 'SELECT * FROM customers WHERE 1=1';
     const params = [];
 
@@ -41,6 +41,22 @@ class CustomerModel {
 
     if (withDebt) {
       query += ' AND balance > 0';
+    }
+
+    // Se withHistory, busca clientes que já tiveram alguma compra fiado ou pagamento
+    if (withHistory) {
+      query = `
+        SELECT DISTINCT c.* FROM customers c
+        WHERE c.active = 1
+        AND (
+          c.balance > 0 
+          OR EXISTS (SELECT 1 FROM sales s WHERE s.customer_id = c.id AND s.payment_method = 'fiado')
+          OR EXISTS (SELECT 1 FROM customer_payments cp WHERE cp.customer_id = c.id)
+        )
+        ORDER BY c.name
+      `;
+      const stmt = this.db.prepare(query);
+      return stmt.all();
     }
 
     query += ' ORDER BY name';

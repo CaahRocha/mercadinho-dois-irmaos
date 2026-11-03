@@ -7,11 +7,12 @@ class CustomerController {
    */
   static async getAll(req, res) {
     try {
-      const { active, withDebt } = req.query;
+      const { active, withDebt, withHistory } = req.query;
       
       const customers = CustomerModel.findAll({
         active: active === 'false' ? false : (active === 'all' ? null : true),
-        withDebt: withDebt === 'true'
+        withDebt: withDebt === 'true',
+        withHistory: withHistory === 'true'
       });
 
       res.json(customers);

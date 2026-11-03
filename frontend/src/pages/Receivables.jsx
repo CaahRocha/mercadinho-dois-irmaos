@@ -8,7 +8,8 @@ import {
   FiSearch, 
   FiClock,
   FiCheckCircle,
-  FiEye
+  FiEye,
+  FiFilter
 } from 'react-icons/fi';
 
 function Receivables() {
@@ -16,6 +17,7 @@ function Receivables() {
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showOnlyWithDebt, setShowOnlyWithDebt] = useState(true); // Filtro: só com débito ou todos
   
   // Modal de pagamento
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -34,12 +36,13 @@ function Receivables() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    loadCustomersWithDebt();
-  }, []);
+    loadCustomers();
+  }, [showOnlyWithDebt]);
 
-  const loadCustomersWithDebt = async () => {
+  const loadCustomers = async () => {
     try {
-      const response = await api.get('/customers?withDebt=true');
+      // Se showOnlyWithDebt, busca só com débito; senão busca todos que já tiveram fiado
+      const response = await api.get(showOnlyWithDebt ? '/customers?withDebt=true' : '/customers?withHistory=true');
       setCustomers(response.data);
     } catch (error) {
       toast.error('Erro ao carregar contas a receber');
@@ -52,14 +55,18 @@ function Receivables() {
     setSearchTerm(term);
     
     if (term.length < 2) {
-      loadCustomersWithDebt();
+      loadCustomers();
       return;
     }
     
     try {
       const response = await api.get(`/customers/search/${encodeURIComponent(term)}`);
-      // Filtrar apenas os que têm débito
-      setCustomers(response.data.filter(c => c.balance > 0));
+      // Filtrar baseado na opção selecionada
+      if (showOnlyWithDebt) {
+        setCustomers(response.data.filter(c => c.balance > 0));
+      } else {
+        setCustomers(response.data);
+      }
     } catch (error) {
       console.error('Erro na busca:', error);
     }
@@ -192,7 +199,7 @@ function Receivables() {
 
       {/* Filtros */}
       <div className="card mb-4">
-        <div className="flex gap-4" style={{ flexWrap: 'wrap' }}>
+        <div className="flex gap-4" style={{ flexWrap: 'wrap', alignItems: 'center' }}>
           <div className="form-group" style={{ flex: 1, minWidth: 200 }}>
             <div className="input-icon" style={{ position: 'relative' }}>
               <FiSearch style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
@@ -205,6 +212,20 @@ function Receivables() {
                 style={{ paddingLeft: '2.5rem' }}
               />
             </div>
+          </div>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button 
+              className={`btn btn-sm ${showOnlyWithDebt ? 'btn-primary' : 'btn-secondary'}`}
+              onClick={() => setShowOnlyWithDebt(true)}
+            >
+              Com Débito
+            </button>
+            <button 
+              className={`btn btn-sm ${!showOnlyWithDebt ? 'btn-primary' : 'btn-secondary'}`}
+              onClick={() => setShowOnlyWithDebt(false)}
+            >
+              Todos (Histórico)
+            </button>
           </div>
         </div>
       </div>
