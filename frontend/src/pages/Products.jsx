@@ -56,26 +56,31 @@ function Products() {
   const handleSearch = async (term) => {
     setSearchTerm(term);
     
-    if (term.length < 1) {
+    // Remove espaços extras
+    const cleanTerm = term.trim();
+    
+    if (cleanTerm.length < 1) {
       loadProducts();
       return;
     }
     
     try {
-      // Primeiro tenta buscar por código de barras (exato)
-      try {
-        const barcodeResponse = await api.get(`/products/barcode/${encodeURIComponent(term)}`);
-        if (barcodeResponse.data) {
-          setProducts([barcodeResponse.data]);
-          return;
+      // Se for só números, busca por código de barras
+      if (/^\d+$/.test(cleanTerm)) {
+        try {
+          const barcodeResponse = await api.get(`/products/barcode/${cleanTerm}`);
+          if (barcodeResponse.data) {
+            setProducts([barcodeResponse.data]);
+            return;
+          }
+        } catch (e) {
+          // Não encontrou por barcode
         }
-      } catch (e) {
-        // Não encontrou por barcode, continua com busca por nome
       }
       
-      // Se não encontrou por barcode e tem pelo menos 2 caracteres, busca por nome
-      if (term.length >= 2) {
-        const response = await api.get(`/products/search/${encodeURIComponent(term)}`);
+      // Busca por nome (precisa de pelo menos 2 caracteres)
+      if (cleanTerm.length >= 2) {
+        const response = await api.get(`/products/search/${encodeURIComponent(cleanTerm)}`);
         setProducts(response.data);
       } else {
         setProducts([]);
