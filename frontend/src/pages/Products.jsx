@@ -247,10 +247,21 @@ function Products() {
       });
       toast.success(response.data.message);
       setShowRenameCategoryModal(false);
+      
+      // Atualiza o filtro para a nova categoria
+      const novaCat = newCategoryName.trim();
+      setSelectedCategory(novaCat);
+      
       setCategoryToRename('');
       setNewCategoryName('');
-      loadProducts();
-      loadCategories();
+      
+      // Recarrega categorias primeiro, depois produtos com a nova categoria
+      await loadCategories();
+      
+      // Busca produtos da nova categoria
+      const prodResponse = await api.get(`/products?category=${encodeURIComponent(novaCat)}`);
+      setProducts(prodResponse.data);
+      setSelectedProducts([]);
     } catch (error) {
       const message = error.response?.data?.message || 'Erro ao renomear categoria';
       toast.error(message);
