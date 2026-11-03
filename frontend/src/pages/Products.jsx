@@ -65,7 +65,7 @@ function Products() {
     }
     
     try {
-      // Se for só números, busca por código de barras
+      // Se for só números, tenta buscar por código de barras primeiro
       if (/^\d+$/.test(cleanTerm)) {
         try {
           const barcodeResponse = await api.get(`/products/barcode/${cleanTerm}`);
@@ -74,14 +74,17 @@ function Products() {
             return;
           }
         } catch (e) {
-          // Não encontrou por barcode
+          // Não encontrou por barcode, vai buscar por nome abaixo
         }
       }
       
-      // Busca por nome (precisa de pelo menos 2 caracteres)
+      // Busca por nome (sempre, mesmo se for número)
       if (cleanTerm.length >= 2) {
         const response = await api.get(`/products/search/${encodeURIComponent(cleanTerm)}`);
         setProducts(response.data);
+      } else if (/^\d+$/.test(cleanTerm)) {
+        // Se for número com menos de 2 dígitos e não achou por barcode
+        setProducts([]);
       } else {
         setProducts([]);
       }
