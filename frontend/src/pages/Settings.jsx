@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
-import { FiSettings, FiSave, FiMail, FiSmartphone, FiUpload, FiTrash2 } from 'react-icons/fi';
+import { FiSettings, FiSave, FiMail, FiSmartphone, FiUpload, FiTrash2, FiShield } from 'react-icons/fi';
 
 function Settings() {
   const { isManager } = useAuth();
@@ -24,6 +24,10 @@ function Settings() {
   const [emailPassword, setEmailPassword] = useState('');
   const [emailFrom, setEmailFrom] = useState('');
   const [emailTo, setEmailTo] = useState('');
+  
+  // Código de Autorização Admin
+  const [adminAuthCode, setAdminAuthCode] = useState('');
+  const authCodeInputRef = useRef(null);
 
   useEffect(() => {
     loadSettings();
@@ -43,6 +47,7 @@ function Settings() {
       if (settings.email_user) setEmailUser(settings.email_user);
       if (settings.email_from) setEmailFrom(settings.email_from);
       if (settings.email_to) setEmailTo(settings.email_to);
+      if (settings.admin_auth_code) setAdminAuthCode(settings.admin_auth_code);
     } catch (error) {
       console.error('Erro ao carregar configurações:', error);
     } finally {
@@ -64,7 +69,8 @@ function Settings() {
         email_port: emailPort,
         email_user: emailUser,
         email_from: emailFrom,
-        email_to: emailTo
+        email_to: emailTo,
+        admin_auth_code: adminAuthCode
       };
 
       // Só envia senha se foi preenchida
@@ -150,6 +156,41 @@ function Settings() {
       </header>
 
       <form onSubmit={handleSave}>
+        {/* Código de Autorização Admin */}
+        <div className="card mb-4">
+          <div className="card-header" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+            <FiShield size={24} style={{ color: '#ef4444' }} />
+            <h3 style={{ margin: 0 }}>Código de Autorização Admin</h3>
+          </div>
+          <p className="text-muted mb-3" style={{ fontSize: '0.875rem' }}>
+            Cadastre o código de barras do cartão/crachá de autorização. Será usado para cancelar itens e dar descontos no PDV.
+          </p>
+          
+          <div className="form-group">
+            <label className="form-label">Código de Barras do Cartão</label>
+            <input
+              type="text"
+              className="form-input"
+              ref={authCodeInputRef}
+              value={adminAuthCode}
+              onChange={(e) => setAdminAuthCode(e.target.value)}
+              placeholder="Escaneie o cartão ou digite o código..."
+              style={{ fontSize: '1.25rem', textAlign: 'center', letterSpacing: '2px' }}
+            />
+            <small className="text-muted">
+              Clique no campo e escaneie o cartão com o leitor de código de barras
+            </small>
+          </div>
+          
+          {adminAuthCode && (
+            <div className="card" style={{ background: '#dcfce7', marginTop: '0.5rem' }}>
+              <p style={{ margin: 0, fontSize: '0.875rem', color: '#166534' }}>
+                ✓ Código cadastrado: <strong>{adminAuthCode.substring(0, 4)}****</strong>
+              </p>
+            </div>
+          )}
+        </div>
+
         {/* Configurações PIX */}
         <div className="card mb-4">
           <div className="card-header" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>

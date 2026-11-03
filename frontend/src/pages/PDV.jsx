@@ -69,8 +69,9 @@ function PDV() {
   
   // Estados para Cancelar Item
   const [showCancelModal, setShowCancelModal] = useState(false);
-  const [cancelPassword, setCancelPassword] = useState('');
+  const [cancelCode, setCancelCode] = useState('');
   const [itemToCancel, setItemToCancel] = useState(null);
+  const [adminAuthCode, setAdminAuthCode] = useState(''); // Código cadastrado nas configurações
 
   useEffect(() => {
     checkOpenRegister();
@@ -86,6 +87,7 @@ function PDV() {
       if (response.data.pix_name) setPixName(response.data.pix_name);
       if (response.data.pix_city) setPixCity(response.data.pix_city);
       if (response.data.pix_qr_image) setPixQrImage(response.data.pix_qr_image);
+      if (response.data.admin_auth_code) setAdminAuthCode(response.data.admin_auth_code);
     } catch (error) {
       console.error('Erro ao carregar configurações:', error);
     }
@@ -239,22 +241,26 @@ function PDV() {
   const removeFromCart = (productId) => {
     const item = cart.find(i => i.product_id === productId);
     setItemToCancel(item);
-    setCancelPassword('');
+    setCancelCode('');
     setShowCancelModal(true);
   };
 
-  const confirmCancelItem = async () => {
-    try {
-      await api.post('/auth/login', {
-        username: 'ederson',
-        password: cancelPassword
-      });
+  const confirmCancelItem = () => {
+    // Verifica se o código digitado/escaneado é igual ao código cadastrado
+    if (!adminAuthCode) {
+      toast.error('Código de autorização não cadastrado! Configure em Configurações.');
+      return;
+    }
+    
+    if (cancelCode === adminAuthCode) {
       setCart(prevCart => prevCart.filter(item => item.product_id !== itemToCancel.product_id));
       toast.success(`${itemToCancel.product_name} removido do carrinho`);
       setShowCancelModal(false);
       setItemToCancel(null);
-    } catch (error) {
-      toast.error('Senha incorreta!');
+      setCancelCode('');
+    } else {
+      toast.error('Código de autorização incorreto!');
+      setCancelCode('');
     }
   };
 
@@ -276,17 +282,21 @@ function PDV() {
     setShowDiscountModal(true);
   };
 
-  const authorizeDiscount = async () => {
-    try {
-      await api.post('/auth/login', {
-        username: 'ederson',
-        password: discountPassword
-      });
+  const authorizeDiscount = () => {
+    // Verifica se o código digitado/escaneado é igual ao código cadastrado
+    if (!adminAuthCode) {
+      toast.error('Código de autorização não cadastrado! Configure em Configurações.');
+      return;
+    }
+    
+    if (discountPassword === adminAuthCode) {
       setDiscountAuthorized(true);
       setShowDiscountModal(false);
+      setDiscountPassword('');
       toast.success('Desconto autorizado!');
-    } catch (error) {
-      toast.error('Senha incorreta!');
+    } else {
+      toast.error('Código de autorização incorreto!');
+      setDiscountPassword('');
     }
   };
 
@@ -1063,15 +1073,15 @@ function PDV() {
             </div>
             <div className="modal-body">
               <p style={{ color: '#6b7280', marginBottom: '1rem', textAlign: 'center' }}>
-                Digite a senha do administrador para liberar o desconto
+                Escaneie o cartão de autorização para liberar o desconto
               </p>
               
               <div className="form-group">
-                <label className="form-label">Senha do Admin</label>
+                <label className="form-label">Código de Autorização</label>
                 <input
                   type="password"
                   className="form-input"
-                  placeholder="Digite a senha..."
+                  placeholder="Escaneie o cartão..."
                   value={discountPassword}
                   onChange={(e) => setDiscountPassword(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && authorizeDiscount()}
@@ -1122,17 +1132,17 @@ function PDV() {
               </div>
               
               <p style={{ color: '#6b7280', marginBottom: '1rem', textAlign: 'center' }}>
-                Digite a senha do administrador para remover este item
+                Escaneie o cartão de autorização para remover este item
               </p>
               
               <div className="form-group">
-                <label className="form-label">Senha do Admin</label>
+                <label className="form-label">Código de Autorização</label>
                 <input
                   type="password"
                   className="form-input"
-                  placeholder="Digite a senha..."
-                  value={cancelPassword}
-                  onChange={(e) => setCancelPassword(e.target.value)}
+                  placeholder="Escaneie o cartão..."
+                  value={cancelCode}
+                  onChange={(e) => setCancelCode(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && confirmCancelItem()}
                   autoFocus
                   style={{ textAlign: 'center', fontSize: '1.25rem' }}
@@ -1146,7 +1156,7 @@ function PDV() {
               <button 
                 className="btn"
                 onClick={confirmCancelItem}
-                disabled={!cancelPassword}
+                disabled={!cancelCode}
                 style={{ background: '#ef4444', borderColor: '#ef4444', color: 'white' }}
               >
                 <FiTrash2 />
