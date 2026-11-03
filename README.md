@@ -19,14 +19,6 @@ Sistema de Ponto de Venda para mercadinhos.
 2. O navegador abrirá automaticamente
 3. **NÃO FECHE** a janela preta enquanto usa o sistema
 
-## Usuários
-
-| Usuário | Senha | Perfil |
-|---------|-------|--------|
-| ederson | admin123 | Administrador |
-| nathanie | gerente123 | Gerente |
-| caixa | caixa123 | Caixa |
-
 ## Funcionalidades
 
 - PDV (Ponto de Venda)
